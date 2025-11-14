@@ -1,40 +1,25 @@
 {
   "pages": {
-    "/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/page.js"
-    ],
     "/layout": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/css/app/layout.css",
       "static/chunks/app/layout.js"
     ],
-    "/game/page": [
+    "/game/zones/arena/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/game/page.js"
+      "static/chunks/app/game/zones/arena/page.js"
     ],
     "/game/layout": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/game/layout.js"
     ],
-    "/game/zones/achievements/page": [
+    "/game/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/game/zones/achievements/page.js"
-    ],
-    "/game/zones/arena/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/game/zones/arena/page.js"
-    ],
-    "/game/zones/shop/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/game/zones/shop/page.js"
+      "static/chunks/app/game/page.js"
     ],
     "/not-found": [
       "static/chunks/webpack.js",
