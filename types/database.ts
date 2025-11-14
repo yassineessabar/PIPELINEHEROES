@@ -585,7 +585,7 @@ export interface QuestProgress extends QuestTemplate {
 }
 
 // Leaderboard Entry with User Info
-export interface LeaderboardEntryWithUser extends LeaderboardEntry {
+export interface LeaderboardEntryWithUser extends Omit<LeaderboardEntry, 'user'> {
   user: {
     id: string
     name: string
