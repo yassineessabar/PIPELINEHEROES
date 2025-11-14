@@ -158,11 +158,11 @@ class AircallService {
 
       const analysis: CallAnalysis = {
         call: call.status === 'fulfilled' ? call.value : {} as AircallCall,
-        transcription: transcription.status === 'fulfilled' ? transcription.value : undefined,
-        sentiment: sentiment.status === 'fulfilled' ? sentiment.value : undefined,
-        topics: topics.status === 'fulfilled' ? topics.value : undefined,
-        summary: summary.status === 'fulfilled' ? summary.value : undefined,
-        actionItems: actionItems.status === 'fulfilled' ? actionItems.value : undefined,
+        transcription: transcription.status === 'fulfilled' ? transcription.value || undefined : undefined,
+        sentiment: sentiment.status === 'fulfilled' ? sentiment.value || undefined : undefined,
+        topics: topics.status === 'fulfilled' ? topics.value || undefined : undefined,
+        summary: summary.status === 'fulfilled' ? summary.value || undefined : undefined,
+        actionItems: actionItems.status === 'fulfilled' ? actionItems.value || undefined : undefined,
         playbookResults: playbookResults.status === 'fulfilled' && playbookResults.value
           ? [playbookResults.value] : undefined
       }
