@@ -1,0 +1,268 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Player {
+  id               String   @id @default(cuid())
+  name             String
+  email            String   @unique
+  level            Int      @default(1)
+  xp               Int      @default(0)
+  coins            Int      @default(0)
+  callsCompleted   Int      @default(0)
+  meetings         Int      @default(0)
+  streakDays       Int      @default(0)
+  avatar           String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  // Relations
+  quests           PlayerQuest[]
+  achievements     PlayerAchievement[]
+  rewards          PlayerReward[]
+  callAnalyses     CallAnalysis[]
+  leaderboardEntries LeaderboardEntry[]
+  trainingProgress TrainingProgress[]
+
+  @@map("players")
+}
+
+model Quest {
+  id            String   @id @default(cuid())
+  name          String
+  description   String
+  targetAmount  Int
+  xpReward      Int
+  coinsReward   Int      @default(0)
+  difficulty    Int      // 1-5 scale
+  type          QuestType
+  isActive      Boolean  @default(true)
+  expiresAt     DateTime?
+  createdAt     DateTime @default(now())
+
+  // Relations
+  players       PlayerQuest[]
+
+  @@map("quests")
+}
+
+model PlayerQuest {
+  id          String    @id @default(cuid())
+  playerId    String
+  questId     String
+  progress    Int       @default(0)
+  isCompleted Boolean   @default(false)
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  // Relations
+  player      Player    @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  quest       Quest     @relation(fields: [questId], references: [id], onDelete: Cascade)
+
+  @@unique([playerId, questId])
+  @@map("player_quests")
+}
+
+model Achievement {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  icon        String
+  description String
+  category    AchievementCategory
+  condition   String   // JSON string describing unlock condition
+  xpReward    Int      @default(0)
+  coinsReward Int      @default(0)
+  rarity      AchievementRarity @default(COMMON)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  // Relations
+  players     PlayerAchievement[]
+
+  @@map("achievements")
+}
+
+model PlayerAchievement {
+  id            String   @id @default(cuid())
+  playerId      String
+  achievementId String
+  unlockedAt    DateTime @default(now())
+
+  // Relations
+  player        Player      @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+
+  @@unique([playerId, achievementId])
+  @@map("player_achievements")
+}
+
+model Reward {
+  id          String     @id @default(cuid())
+  name        String
+  icon        String
+  description String
+  cost        Int
+  category    RewardCategory
+  rarity      RewardRarity @default(COMMON)
+  isActive    Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+
+  // Relations
+  players     PlayerReward[]
+
+  @@map("rewards")
+}
+
+model PlayerReward {
+  id          String   @id @default(cuid())
+  playerId    String
+  rewardId    String
+  purchasedAt DateTime @default(now())
+
+  // Relations
+  player      Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  reward      Reward   @relation(fields: [rewardId], references: [id], onDelete: Cascade)
+
+  @@map("player_rewards")
+}
+
+model TrainingQuestion {
+  id         String   @id @default(cuid())
+  bossName   String
+  difficulty Int      // 1-5 scale
+  prompt     String
+  category   String   // e.g., "pricing", "competition", "timeline"
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  // Relations
+  choices    TrainingChoice[]
+  progress   TrainingProgress[]
+
+  @@map("training_questions")
+}
+
+model TrainingChoice {
+  id         String   @id @default(cuid())
+  questionId String
+  text       String
+  xpReward   Int
+  isBest     Boolean  @default(false)
+  feedback   String?
+
+  // Relations
+  question   TrainingQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@map("training_choices")
+}
+
+model TrainingProgress {
+  id         String   @id @default(cuid())
+  playerId   String
+  questionId String
+  choiceId   String
+  xpEarned   Int
+  answeredAt DateTime @default(now())
+
+  // Relations
+  player     Player           @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  question   TrainingQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@map("training_progress")
+}
+
+model CallAnalysis {
+  id           String   @id @default(cuid())
+  playerId     String
+  customer     String?
+  duration     Int?     // in minutes
+  score        Float    // 0-10 scale
+  strengths    String[] // Array of strength descriptions
+  weaknesses   String[] // Array of improvement areas
+  xpEarned     Int
+  coinsEarned  Int      @default(0)
+  callType     String?  // discovery, demo, closing, etc.
+  pipelineValue Float?  // estimated deal value
+  timestamp    DateTime @default(now())
+
+  // Relations
+  player       Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@map("call_analysis")
+}
+
+model LeaderboardEntry {
+  id        String   @id @default(cuid())
+  playerId  String
+  rank      Int
+  xp        Int
+  level     Int
+  meetings  Int
+  calls     Int
+  score     Int      // Calculated score for ranking
+  period    LeaderboardPeriod
+  createdAt DateTime @default(now())
+
+  // Relations
+  player    Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([playerId, period, createdAt])
+  @@map("leaderboard_entries")
+}
+
+// Enums
+enum QuestType {
+  DAILY
+  WEEKLY
+  MONTHLY
+  MILESTONE
+  SPECIAL
+}
+
+enum AchievementCategory {
+  CALLS
+  MEETINGS
+  PIPELINE
+  STREAK
+  TRAINING
+  SOCIAL
+  MILESTONE
+}
+
+enum AchievementRarity {
+  COMMON
+  UNCOMMON
+  RARE
+  EPIC
+  LEGENDARY
+}
+
+enum RewardCategory {
+  COSMETIC
+  BOOST
+  UNLOCK
+  BADGE
+}
+
+enum RewardRarity {
+  COMMON
+  UNCOMMON
+  RARE
+  EPIC
+  LEGENDARY
+}
+
+enum LeaderboardPeriod {
+  DAILY
+  WEEKLY
+  MONTHLY
+  ALL_TIME
+}
