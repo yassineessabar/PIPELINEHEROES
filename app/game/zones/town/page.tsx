@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { CallAnalysisForm } from '@/components/game/CallAnalysisForm'
+import { CallAnalysis } from '@/types/aircall'
 
 // Mock data - replace with real data fetching
 const mockCallAnalyses = [
@@ -74,7 +75,10 @@ export default function TownCenterPage() {
                 Upload your call recording or enter details manually for AI analysis
               </DialogDescription>
             </DialogHeader>
-            <CallAnalysisForm onClose={() => setIsAddingCall(false)} />
+            <CallAnalysisForm onAnalysisComplete={(analysis: CallAnalysis) => {
+              console.log('Analysis completed:', analysis)
+              setIsAddingCall(false)
+            }} />
           </DialogContent>
         </Dialog>
       </div>
