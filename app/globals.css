@@ -1,51 +1,34 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Share+Tech+Mono:wght@400&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-    --radius: 0.5rem;
-  }
+    /* Cyberpunk color scheme */
+    --primary: 0 240 255; /* Cyan #00F0FF */
+    --primary-dark: 0 174 239; /* Blue #00AEEF */
+    --background: 13 12 29; /* Dark purple #0D0C1D */
+    --background-dark: 26 25 43; /* Darker purple #1A192B */
+    --surface: 31 30 58; /* Purple surface #1F1E3A */
+    --accent: 255 0 255; /* Magenta #FF00FF */
+    --on-surface: 224 224 224; /* Light gray #E0E0E0 */
+    --gold: 212 175 55; /* Keep original gold */
 
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    --foreground: 224 224 224;
+    --card: 31 30 58;
+    --card-foreground: 224 224 224;
+    --popover: 31 30 58;
+    --popover-foreground: 224 224 224;
+    --secondary: 26 25 43;
+    --secondary-foreground: 224 224 224;
+    --muted: 26 25 43;
+    --muted-foreground: 148 163 184;
+    --border: 31 30 58;
+    --input: 31 30 58;
+    --ring: 0 240 255;
+    --radius: 0.5rem;
   }
 }
 
@@ -53,27 +36,217 @@
   * {
     @apply border-border;
   }
+
   body {
-    @apply bg-background text-foreground;
+    @apply bg-gradient-to-br from-[#0D0C1D] to-[#1A192B] text-[#E0E0E0];
+    font-family: 'Share Tech Mono', monospace;
   }
+
+  .font-display {
+    font-family: 'Orbitron', sans-serif;
+  }
+
+  .font-body {
+    font-family: 'Share Tech Mono', monospace;
+  }
+}
+
+/* Cyberpunk animations and effects */
+@keyframes neonPulse {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(0, 240, 255, 0.6);
+  }
+  50% {
+    box-shadow: 0 0 15px rgba(0, 240, 255, 0.8), 0 0 25px rgba(0, 240, 255, 0.5);
+  }
+}
+
+@keyframes wireframePulse {
+  0%, 100% {
+    border-color: rgba(0, 240, 255, 0.6);
+  }
+  50% {
+    border-color: rgba(0, 240, 255, 0.9);
+  }
+}
+
+@keyframes glitchFlicker {
+  0%, 98%, 100% {
+    opacity: 1;
+    text-shadow: 0 0 10px rgba(0, 240, 255, 0.8);
+  }
+  99% {
+    opacity: 0.8;
+    text-shadow: 2px 0 0 rgba(255, 0, 255, 0.8), -2px 0 0 rgba(0, 240, 255, 0.8);
+  }
+}
+
+@keyframes dataStream {
+  0% {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+}
+
+.animate-neon-pulse {
+  animation: neonPulse 2s infinite alternate;
+}
+
+.animate-wireframe-pulse {
+  animation: wireframePulse 1.5s infinite alternate;
+}
+
+.animate-glitch {
+  animation: glitchFlicker 3s infinite;
+}
+
+.animate-data-stream {
+  animation: dataStream 2s infinite linear;
 }
 
 /* Game-specific styles */
 .game-background {
-  background: linear-gradient(135deg, #0a0e14 0%, #1a1f2e 100%);
+  background: linear-gradient(135deg, #0D0C1D 0%, #1A192B 50%, #0D0C1D 100%);
   min-height: 100vh;
+  position: relative;
+}
+
+.game-background::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background:
+    radial-gradient(circle at 20% 30%, rgba(0, 240, 255, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 80% 70%, rgba(255, 0, 255, 0.1) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
 }
 
 .zone-glow {
-  box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
-  transition: box-shadow 0.3s ease;
+  box-shadow:
+    0 0 10px rgba(0, 240, 255, 0.6),
+    0 0 20px rgba(0, 240, 255, 0.4),
+    0 0 30px rgba(0, 240, 255, 0.2);
+  transition: all 0.3s ease;
 }
 
 .zone-glow:hover {
-  box-shadow: 0 0 30px rgba(212, 175, 55, 0.6);
+  box-shadow:
+    0 0 15px rgba(0, 240, 255, 0.8),
+    0 0 25px rgba(0, 240, 255, 0.5),
+    0 0 40px rgba(0, 240, 255, 0.3);
+  transform: scale(1.02);
+}
+
+.accent-glow {
+  box-shadow:
+    0 0 10px rgba(255, 0, 255, 0.6),
+    0 0 20px rgba(255, 0, 255, 0.4);
 }
 
 .xp-bar {
-  background: linear-gradient(90deg, #d4af37 0%, #f4d03f 100%);
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+  background: linear-gradient(90deg, #FF00FF 0%, #00F0FF 100%);
+  box-shadow:
+    inset 0 2px 4px rgba(0, 0, 0, 0.2),
+    0 0 10px rgba(0, 240, 255, 0.4);
+}
+
+.text-shadow-neon {
+  text-shadow: 0 0 10px rgba(0, 240, 255, 0.8);
+}
+
+.text-shadow-accent {
+  text-shadow: 0 0 10px rgba(255, 0, 255, 0.8);
+}
+
+.cyber-border {
+  border: 1px solid rgba(0, 240, 255, 0.3);
+  position: relative;
+}
+
+.cyber-border::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: -1px;
+  right: -1px;
+  bottom: -1px;
+  background: linear-gradient(45deg, rgba(0, 240, 255, 0.5), rgba(255, 0, 255, 0.5));
+  z-index: -1;
+  border-radius: inherit;
+}
+
+.holographic {
+  background: linear-gradient(
+    135deg,
+    rgba(0, 240, 255, 0.1) 0%,
+    rgba(255, 0, 255, 0.1) 50%,
+    rgba(0, 240, 255, 0.1) 100%
+  );
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(0, 240, 255, 0.3);
+}
+
+.grid-pattern {
+  background-image:
+    linear-gradient(rgba(0, 240, 255, 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 240, 255, 0.1) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(13, 12, 29, 0.5);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 240, 255, 0.5);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 240, 255, 0.8);
+}
+
+/* Selection styling */
+::selection {
+  background-color: rgba(0, 240, 255, 0.3);
+  color: #E0E0E0;
+}
+
+.obsidian {
+  color: #0D0C1D;
+}
+
+/* Level indicators */
+.level-indicator {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: linear-gradient(45deg, #FF00FF, #00F0FF);
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  font-size: 12px;
+  color: #0D0C1D;
+  box-shadow: 0 0 15px rgba(0, 240, 255, 0.6);
 }

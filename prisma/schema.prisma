@@ -10,259 +10,626 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Player {
-  id               String   @id @default(cuid())
-  name             String
-  email            String   @unique
-  level            Int      @default(1)
-  xp               Int      @default(0)
-  coins            Int      @default(0)
-  callsCompleted   Int      @default(0)
-  meetings         Int      @default(0)
-  streakDays       Int      @default(0)
-  avatar           String?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+// ============================================================================
+// CORE MODELS
+// ============================================================================
+
+model Workspace {
+  id   String @id @default(uuid()) @db.Uuid
+  name String
+  slug String @unique
+
+  description String?
+
+  // Aircall Integration
+  aircallApiId      String? @map("aircall_api_id")
+  aircallApiToken   String? @map("aircall_api_token")
+  aircallWebhookSecret String? @map("aircall_webhook_secret")
+
+  // Billing & Subscription
+  subscriptionTier   String  @default("free") @map("subscription_tier")
+  subscriptionStatus String  @default("active") @map("subscription_status")
+  subscriptionEndsAt DateTime? @map("subscription_ends_at")
+
+  // Settings
+  settings Json @default("{}")
+  timezone String @default("UTC")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   // Relations
-  quests           PlayerQuest[]
-  achievements     PlayerAchievement[]
-  rewards          PlayerReward[]
-  callAnalyses     CallAnalysis[]
+  users              User[]
+  activities         Activity[]
+  leaderboardPeriods LeaderboardPeriod[]
+
+  @@map("workspaces")
+}
+
+model User {
+  id          String @id @default(uuid()) @db.Uuid
+  workspaceId String @map("workspace_id") @db.Uuid
+
+  // Basic Info
+  email     String  @unique
+  name      String
+  avatarUrl String? @map("avatar_url")
+
+  // Authentication
+  passwordHash  String? @map("password_hash")
+  emailVerified Boolean @default(false) @map("email_verified")
+  lastLogin     DateTime? @map("last_login")
+
+  // Role & Permissions
+  role        String @default("member")
+  permissions Json   @default("[]")
+
+  // Game Profile
+  displayName String? @map("display_name")
+  playerClass String  @default("neural_operative") @map("player_class")
+
+  // Aircall Integration
+  aircallUserId   Int?    @map("aircall_user_id")
+  aircallExtension String? @map("aircall_extension")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  workspace         Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  playerStats       PlayerStats?
+  xpTransactions    XpTransaction[]
+  userAchievements  UserAchievement[]
+  trainingSessions  TrainingSession[]
+  calls             Call[]
+  callAnalyses      CallAnalysis[]
+  userQuests        UserQuest[]
   leaderboardEntries LeaderboardEntry[]
-  trainingProgress TrainingProgress[]
+  purchases         UserPurchase[]
+  activities        Activity[]
+  notifications     Notification[]
+  dailyStats        DailyUserStats[]
 
-  @@map("players")
+  @@map("users")
 }
 
-model Quest {
-  id            String   @id @default(cuid())
-  name          String
-  description   String
-  targetAmount  Int
-  xpReward      Int
-  coinsReward   Int      @default(0)
-  difficulty    Int      // 1-5 scale
-  type          QuestType
-  isActive      Boolean  @default(true)
-  expiresAt     DateTime?
-  createdAt     DateTime @default(now())
+// ============================================================================
+// GAME MECHANICS
+// ============================================================================
+
+model PlayerStats {
+  id     String @id @default(uuid()) @db.Uuid
+  userId String @unique @map("user_id") @db.Uuid
+
+  // Core Game Stats
+  level Int @default(1)
+  xp    BigInt @default(0)
+  coins BigInt @default(100)
+
+  // Performance Metrics
+  callsCompleted          Int @default(0) @map("calls_completed")
+  meetingsCompleted       Int @default(0) @map("meetings_completed")
+  trainingSessionsCompleted Int @default(0) @map("training_sessions_completed")
+  questsCompleted         Int @default(0) @map("quests_completed")
+
+  // Streak Tracking
+  currentStreak     Int      @default(0) @map("current_streak")
+  longestStreak     Int      @default(0) @map("longest_streak")
+  lastActivityDate  DateTime? @map("last_activity_date") @db.Date
+
+  // Pipeline Metrics
+  totalPipelineValue Decimal @default(0) @map("total_pipeline_value") @db.Decimal(15, 2)
+  dealsClosed        Int     @default(0) @map("deals_closed")
+  avgDealSize        Decimal @default(0) @map("avg_deal_size") @db.Decimal(15, 2)
+
+  // Skill Scores (0-100)
+  objectionHandlingScore Int @default(0) @map("objection_handling_score")
+  rapportBuildingScore   Int @default(0) @map("rapport_building_score")
+  discoveryScore         Int @default(0) @map("discovery_score")
+  closingScore           Int @default(0) @map("closing_score")
+  valuePropositionScore  Int @default(0) @map("value_proposition_score")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   // Relations
-  players       PlayerQuest[]
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@map("quests")
+  @@map("player_stats")
 }
 
-model PlayerQuest {
-  id          String    @id @default(cuid())
-  playerId    String
-  questId     String
-  progress    Int       @default(0)
-  isCompleted Boolean   @default(false)
-  completedAt DateTime?
-  createdAt   DateTime  @default(now())
+model XpTransaction {
+  id     String @id @default(uuid()) @db.Uuid
+  userId String @map("user_id") @db.Uuid
+
+  amount   Int
+  reason   String
+  source   String // 'call_analysis', 'training', 'achievement', 'quest'
+  sourceId String? @map("source_id") @db.Uuid
+
+  metadata Json @default("{}")
+
+  createdAt DateTime @default(now()) @map("created_at")
 
   // Relations
-  player      Player    @relation(fields: [playerId], references: [id], onDelete: Cascade)
-  quest       Quest     @relation(fields: [questId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([playerId, questId])
-  @@map("player_quests")
+  @@map("xp_transactions")
 }
 
 model Achievement {
-  id          String   @id @default(cuid())
-  name        String   @unique
-  icon        String
+  id String @id @default(uuid()) @db.Uuid
+
+  // Basic Info
+  name        String
+  slug        String @unique
   description String
-  category    AchievementCategory
-  condition   String   // JSON string describing unlock condition
-  xpReward    Int      @default(0)
-  coinsReward Int      @default(0)
-  rarity      AchievementRarity @default(COMMON)
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
+  icon        String?
+
+  // Categorization
+  category String
+  rarity   String @default("common")
+
+  // Requirements
+  requirementType  String @map("requirement_type")
+  requirementValue Decimal @map("requirement_value") @db.Decimal(15, 2)
+  requirementField String? @map("requirement_field")
+
+  // Rewards
+  xpReward    Int @default(0) @map("xp_reward")
+  coinsReward Int @default(0) @map("coins_reward")
+
+  // Metadata
+  isHidden Boolean @default(false) @map("is_hidden")
+  isActive Boolean @default(true) @map("is_active")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   // Relations
-  players     PlayerAchievement[]
+  userAchievements UserAchievement[]
 
   @@map("achievements")
 }
 
-model PlayerAchievement {
-  id            String   @id @default(cuid())
-  playerId      String
-  achievementId String
-  unlockedAt    DateTime @default(now())
+model UserAchievement {
+  id            String @id @default(uuid()) @db.Uuid
+  userId        String @map("user_id") @db.Uuid
+  achievementId String @map("achievement_id") @db.Uuid
+
+  progress    Decimal @default(0) @db.Decimal(15, 2)
+  maxProgress Decimal @map("max_progress") @db.Decimal(15, 2)
+  isCompleted Boolean @default(false) @map("is_completed")
+  completedAt DateTime? @map("completed_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   // Relations
-  player        Player      @relation(fields: [playerId], references: [id], onDelete: Cascade)
-  achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievement Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
 
-  @@unique([playerId, achievementId])
-  @@map("player_achievements")
+  @@unique([userId, achievementId])
+  @@map("user_achievements")
 }
 
-model Reward {
-  id          String     @id @default(cuid())
+// ============================================================================
+// TRAINING SYSTEM
+// ============================================================================
+
+model TrainingCategory {
+  id String @id @default(uuid()) @db.Uuid
+
   name        String
-  icon        String
-  description String
-  cost        Int
-  category    RewardCategory
-  rarity      RewardRarity @default(COMMON)
-  isActive    Boolean    @default(true)
-  createdAt   DateTime   @default(now())
+  slug        String @unique
+  description String?
+  icon        String?
+  color       String?
+  sortOrder   Int    @default(0) @map("sort_order")
+
+  createdAt DateTime @default(now()) @map("created_at")
 
   // Relations
-  players     PlayerReward[]
+  questions TrainingQuestion[]
 
-  @@map("rewards")
-}
-
-model PlayerReward {
-  id          String   @id @default(cuid())
-  playerId    String
-  rewardId    String
-  purchasedAt DateTime @default(now())
-
-  // Relations
-  player      Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
-  reward      Reward   @relation(fields: [rewardId], references: [id], onDelete: Cascade)
-
-  @@map("player_rewards")
+  @@map("training_categories")
 }
 
 model TrainingQuestion {
-  id         String   @id @default(cuid())
-  bossName   String
-  difficulty Int      // 1-5 scale
+  id         String @id @default(uuid()) @db.Uuid
+  categoryId String @map("category_id") @db.Uuid
+
+  title      String
+  bossName   String @map("boss_name")
+  difficulty Int
   prompt     String
-  category   String   // e.g., "pricing", "competition", "timeline"
-  isActive   Boolean  @default(true)
-  createdAt  DateTime @default(now())
+
+  tags     String[]
+  isActive Boolean @default(true) @map("is_active")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   // Relations
-  choices    TrainingChoice[]
-  progress   TrainingProgress[]
+  category TrainingCategory  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  choices  TrainingChoice[]
+  sessions TrainingSession[]
 
   @@map("training_questions")
 }
 
 model TrainingChoice {
-  id         String   @id @default(cuid())
-  questionId String
-  text       String
-  xpReward   Int
-  isBest     Boolean  @default(false)
-  feedback   String?
+  id         String @id @default(uuid()) @db.Uuid
+  questionId String @map("question_id") @db.Uuid
+
+  text      String
+  isCorrect Boolean @default(false) @map("is_correct")
+  xpReward  Int     @default(0) @map("xp_reward")
+  feedback  String?
+
+  sortOrder Int @default(0) @map("sort_order")
+
+  createdAt DateTime @default(now()) @map("created_at")
 
   // Relations
-  question   TrainingQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  question TrainingQuestion  @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  sessions TrainingSession[]
 
   @@map("training_choices")
 }
 
-model TrainingProgress {
-  id         String   @id @default(cuid())
-  playerId   String
-  questionId String
-  choiceId   String
-  xpEarned   Int
-  answeredAt DateTime @default(now())
+model TrainingSession {
+  id         String @id @default(uuid()) @db.Uuid
+  userId     String @map("user_id") @db.Uuid
+  questionId String @map("question_id") @db.Uuid
+  choiceId   String @map("choice_id") @db.Uuid
+
+  isCorrect Boolean @map("is_correct")
+  timeSpent Int?    @map("time_spent") // Seconds
+  xpEarned  Int     @default(0) @map("xp_earned")
+
+  createdAt DateTime @default(now()) @map("created_at")
 
   // Relations
-  player     Player           @relation(fields: [playerId], references: [id], onDelete: Cascade)
-  question   TrainingQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  question TrainingQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  choice   TrainingChoice   @relation(fields: [choiceId], references: [id], onDelete: Cascade)
 
-  @@map("training_progress")
+  @@map("training_sessions")
+}
+
+// ============================================================================
+// CALL ANALYSIS
+// ============================================================================
+
+model Call {
+  id     String @id @default(uuid()) @db.Uuid
+  userId String @map("user_id") @db.Uuid
+
+  // Aircall Data
+  aircallCallId    BigInt @unique @map("aircall_call_id")
+  aircallDirectLink String? @map("aircall_direct_link")
+
+  // Call Details
+  direction String
+  status    String
+  startedAt DateTime @map("started_at")
+  answeredAt DateTime? @map("answered_at")
+  endedAt    DateTime? @map("ended_at")
+  duration   Int? // Seconds
+
+  // Contact Info
+  contactName    String? @map("contact_name")
+  contactPhone   String? @map("contact_phone")
+  contactCompany String? @map("contact_company")
+
+  // Recording & Analysis
+  recordingUrl     String? @map("recording_url")
+  hasTranscription Boolean @default(false) @map("has_transcription")
+  hasAnalysis      Boolean @default(false) @map("has_analysis")
+
+  metadata Json @default("{}")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user     User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  analysis CallAnalysis?
+
+  @@map("calls")
 }
 
 model CallAnalysis {
-  id           String   @id @default(cuid())
-  playerId     String
-  customer     String?
-  duration     Int?     // in minutes
-  score        Float    // 0-10 scale
-  strengths    String[] // Array of strength descriptions
-  weaknesses   String[] // Array of improvement areas
-  xpEarned     Int
-  coinsEarned  Int      @default(0)
-  callType     String?  // discovery, demo, closing, etc.
-  pipelineValue Float?  // estimated deal value
-  timestamp    DateTime @default(now())
+  id     String @id @default(uuid()) @db.Uuid
+  callId String @unique @map("call_id") @db.Uuid
+  userId String @map("user_id") @db.Uuid
+
+  // Analysis Results
+  gameScore     Int? @map("game_score")
+  totalXpEarned Int  @default(0) @map("total_xp_earned")
+
+  // Sentiment Analysis
+  overallSentiment    String? @map("overall_sentiment")
+  sentimentConfidence Decimal? @map("sentiment_confidence") @db.Decimal(5, 4)
+  positiveSegments    Int     @default(0) @map("positive_segments")
+  negativeSegments    Int     @default(0) @map("negative_segments")
+  neutralSegments     Int     @default(0) @map("neutral_segments")
+
+  // Topics
+  topicsIdentified String[] @map("topics_identified")
+  topicsCount      Int      @default(0) @map("topics_count")
+
+  // Performance Scores
+  objectionHandlingScore Int? @map("objection_handling_score")
+  rapportBuildingScore   Int? @map("rapport_building_score")
+  discoveryScore         Int? @map("discovery_score")
+  closingScore           Int? @map("closing_score")
+  valuePropositionScore  Int? @map("value_proposition_score")
+
+  // Summary
+  summaryText String?  @map("summary_text")
+  keyPoints   String[] @map("key_points")
+  actionItems Json     @default("[]") @map("action_items")
+
+  // Raw Aircall Data
+  aircallTranscription Json? @map("aircall_transcription")
+  aircallSentiment     Json? @map("aircall_sentiment")
+  aircallTopics        Json? @map("aircall_topics")
+  aircallSummary       Json? @map("aircall_summary")
+  aircallActionItems   Json? @map("aircall_action_items")
+
+  analyzedAt DateTime @default(now()) @map("analyzed_at")
+  createdAt  DateTime @default(now()) @map("created_at")
 
   // Relations
-  player       Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  call     Call          @relation(fields: [callId], references: [id], onDelete: Cascade)
+  user     User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  insights CallInsight[]
 
-  @@map("call_analysis")
+  @@map("call_analyses")
+}
+
+model CallInsight {
+  id         String @id @default(uuid()) @db.Uuid
+  analysisId String @map("analysis_id") @db.Uuid
+
+  insightType    String @map("insight_type")
+  title          String
+  description    String
+  score          Int?
+  improvementTip String? @map("improvement_tip")
+  xpEarned       Int     @default(0) @map("xp_earned")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  analysis CallAnalysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+
+  @@map("call_insights")
+}
+
+// ============================================================================
+// QUESTS & MISSIONS
+// ============================================================================
+
+model QuestTemplate {
+  id String @id @default(uuid()) @db.Uuid
+
+  name        String
+  description String
+  category    String
+  difficulty  String @default("medium")
+
+  objectiveType  String @map("objective_type")
+  objectiveCount Int    @map("objective_count")
+  timeLimitHours Int?   @map("time_limit_hours")
+
+  xpReward    Int @default(0) @map("xp_reward")
+  coinsReward Int @default(0) @map("coins_reward")
+
+  isRepeatable Boolean @default(false) @map("is_repeatable")
+  isActive     Boolean @default(true) @map("is_active")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  userQuests UserQuest[]
+
+  @@map("quest_templates")
+}
+
+model UserQuest {
+  id         String @id @default(uuid()) @db.Uuid
+  userId     String @map("user_id") @db.Uuid
+  templateId String @map("template_id") @db.Uuid
+
+  currentProgress Int     @default(0) @map("current_progress")
+  targetProgress  Int     @map("target_progress")
+  isCompleted     Boolean @default(false) @map("is_completed")
+
+  startedAt   DateTime  @default(now()) @map("started_at")
+  expiresAt   DateTime? @map("expires_at")
+  completedAt DateTime? @map("completed_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user     User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  template QuestTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@map("user_quests")
+}
+
+// ============================================================================
+// LEADERBOARDS
+// ============================================================================
+
+model LeaderboardPeriod {
+  id          String @id @default(uuid()) @db.Uuid
+  workspaceId String @map("workspace_id") @db.Uuid
+
+  periodType String   @map("period_type")
+  startDate  DateTime @map("start_date") @db.Date
+  endDate    DateTime @map("end_date") @db.Date
+
+  isCurrent Boolean @default(false) @map("is_current")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  workspace Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  entries   LeaderboardEntry[]
+
+  @@unique([workspaceId, periodType, startDate])
+  @@map("leaderboard_periods")
 }
 
 model LeaderboardEntry {
-  id        String   @id @default(cuid())
-  playerId  String
-  rank      Int
-  xp        Int
-  level     Int
-  meetings  Int
-  calls     Int
-  score     Int      // Calculated score for ranking
-  period    LeaderboardPeriod
-  createdAt DateTime @default(now())
+  id       String @id @default(uuid()) @db.Uuid
+  periodId String @map("period_id") @db.Uuid
+  userId   String @map("user_id") @db.Uuid
+
+  rankPosition Int     @map("rank_position")
+  metricType   String  @map("metric_type")
+  metricValue  Decimal @map("metric_value") @db.Decimal(15, 2)
+
+  rankChange Int @default(0) @map("rank_change")
+
+  createdAt DateTime @default(now()) @map("created_at")
 
   // Relations
-  player    Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  period LeaderboardPeriod @relation(fields: [periodId], references: [id], onDelete: Cascade)
+  user   User              @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([playerId, period, createdAt])
+  @@unique([periodId, userId, metricType])
   @@map("leaderboard_entries")
 }
 
-// Enums
-enum QuestType {
-  DAILY
-  WEEKLY
-  MONTHLY
-  MILESTONE
-  SPECIAL
+// ============================================================================
+// SHOP SYSTEM
+// ============================================================================
+
+model ShopItem {
+  id String @id @default(uuid()) @db.Uuid
+
+  name        String
+  description String
+  category    String
+
+  coinPrice      Int @default(0) @map("coin_price")
+  realPriceCents Int? @map("real_price_cents")
+
+  isLimited    Boolean @default(false) @map("is_limited")
+  stockQuantity Int? @map("stock_quantity")
+  maxPerUser   Int     @default(1) @map("max_per_user")
+
+  icon      String?
+  isActive  Boolean @default(true) @map("is_active")
+  sortOrder Int     @default(0) @map("sort_order")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  purchases UserPurchase[]
+
+  @@map("shop_items")
 }
 
-enum AchievementCategory {
-  CALLS
-  MEETINGS
-  PIPELINE
-  STREAK
-  TRAINING
-  SOCIAL
-  MILESTONE
+model UserPurchase {
+  id     String @id @default(uuid()) @db.Uuid
+  userId String @map("user_id") @db.Uuid
+  itemId String @map("item_id") @db.Uuid
+
+  coinsSpent         Int @default(0) @map("coins_spent")
+  realMoneySpentCents Int @default(0) @map("real_money_spent_cents")
+  quantity           Int @default(1)
+
+  isActive  Boolean   @default(true) @map("is_active")
+  expiresAt DateTime? @map("expires_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  item ShopItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@map("user_purchases")
 }
 
-enum AchievementRarity {
-  COMMON
-  UNCOMMON
-  RARE
-  EPIC
-  LEGENDARY
+// ============================================================================
+// ACTIVITY & NOTIFICATIONS
+// ============================================================================
+
+model Activity {
+  id          String @id @default(uuid()) @db.Uuid
+  workspaceId String @map("workspace_id") @db.Uuid
+  userId      String @map("user_id") @db.Uuid
+
+  activityType String @map("activity_type")
+  title        String
+  description  String?
+
+  metadata Json    @default("{}")
+  isPublic Boolean @default(true) @map("is_public")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("activities")
 }
 
-enum RewardCategory {
-  COSMETIC
-  BOOST
-  UNLOCK
-  BADGE
+model Notification {
+  id     String @id @default(uuid()) @db.Uuid
+  userId String @map("user_id") @db.Uuid
+
+  title   String
+  message String
+  type    String
+
+  isRead Boolean   @default(false) @map("is_read")
+  readAt DateTime? @map("read_at")
+
+  actionUrl   String? @map("action_url")
+  actionLabel String? @map("action_label")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
 }
 
-enum RewardRarity {
-  COMMON
-  UNCOMMON
-  RARE
-  EPIC
-  LEGENDARY
-}
+// ============================================================================
+// ANALYTICS
+// ============================================================================
 
-enum LeaderboardPeriod {
-  DAILY
-  WEEKLY
-  MONTHLY
-  ALL_TIME
+model DailyUserStats {
+  id     String   @id @default(uuid()) @db.Uuid
+  userId String   @map("user_id") @db.Uuid
+  date   DateTime @db.Date
+
+  callsMade        Int @default(0) @map("calls_made")
+  meetingsHeld     Int @default(0) @map("meetings_held")
+  xpGained         Int @default(0) @map("xp_gained")
+  coinsEarned      Int @default(0) @map("coins_earned")
+  trainingSessions Int @default(0) @map("training_sessions")
+
+  avgCallScore       Decimal? @map("avg_call_score") @db.Decimal(5, 2)
+  totalCallDuration  Int      @default(0) @map("total_call_duration")
+  pipelineAdded      Decimal  @default(0) @map("pipeline_added") @db.Decimal(15, 2)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@map("daily_user_stats")
 }

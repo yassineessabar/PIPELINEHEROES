@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Sword, Trophy, Target } from 'lucide-react'
+import { ArrowLeft, Swords, Trophy, Target, Zap, Brain, Activity } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -27,38 +27,38 @@ interface TrainingQuestion {
 
 const mockTrainingQuestion: TrainingQuestion = {
   id: '1',
-  bossName: 'Budget Objection Dragon',
+  bossName: 'BUDGET.EXE PROTOCOL',
   difficulty: 4,
-  prompt: 'The prospect says: "Your solution looks interesting, but honestly the budget is just not there right now. We\'re already paying for 3 other tools. How can you justify the cost?"',
-  category: 'pricing',
+  prompt: 'INCOMING TRANSMISSION: "Your solution looks interesting, but honestly the budget is just not there right now. We\'re already paying for 3 other tools. How can you justify the cost?"',
+  category: 'NEURAL_NEGOTIATION',
   choices: [
     {
       id: 'roi',
       text: 'Let me show you the ROI. On average, our customers see 3x return within 6 months...',
       xpReward: 75,
       isBest: true,
-      feedback: '✅ EXCELLENT! ROI Technique - You\'re quantifying value and showing concrete returns.'
+      feedback: '⚡ NEURAL SYNC COMPLETE! ROI Matrix - Quantified value protocols activated. Financial justification subroutine executed.'
     },
     {
       id: 'timing',
       text: 'I understand. What if we revisit this conversation next quarter when...',
       xpReward: 25,
       isBest: false,
-      feedback: '⚠️ OKAY. Postpones issue - You\'re being considerate but missing the opportunity to create urgency.'
+      feedback: '⚠️ TEMPORAL DELAY DETECTED. Strategy incomplete - Missed urgency optimization. Opportunity stasis achieved.'
     },
     {
       id: 'value',
       text: 'The budget concern is valid. But consider the hidden cost of NOT having this...',
       xpReward: 70,
       isBest: false,
-      feedback: '✅ GREAT! Value reframing - Good approach to shift focus from cost to value and consequences.'
+      feedback: '⚡ VALUE REFRAME PROTOCOL. Cognitive shift engaged - Cost-benefit analysis redirected to consequence matrix.'
     },
     {
       id: 'alternative',
       text: 'What if we start with just the core module at 50% of the price?',
       xpReward: 65,
       isBest: false,
-      feedback: '✅ SMART! Creative solution - Offering alternatives shows flexibility and problem-solving.'
+      feedback: '⚡ ADAPTIVE SOLUTION ENGINE. Flexibility subroutine - Alternative pathway computation successful.'
     }
   ]
 }
@@ -84,50 +84,60 @@ export default function TrainingPage() {
   }
 
   const getChoiceColor = (choice: TrainingChoice) => {
-    if (!showFeedback || selectedChoice !== choice.id) return 'border-game-blue bg-game-blue/10'
-    return choice.isBest ? 'border-green-400 bg-green-400/20' : 'border-yellow-400 bg-yellow-400/20'
+    if (!showFeedback || selectedChoice !== choice.id) return 'border-[#00F0FF]/30 bg-[#00F0FF]/10 hover:border-[#00F0FF]/50'
+    return choice.isBest ? 'border-[#00FF88]/50 bg-[#00FF88]/20' : 'border-[#FFD700]/50 bg-[#FFD700]/20'
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center space-x-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => window.history.back()}
-            className="text-gold hover:bg-gold/10"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold text-gold">Training Grounds</h1>
-            <p className="text-gray-300">Master your objection handling skills</p>
-          </div>
-        </div>
-        <Badge variant="outline" className="text-gold border-gold/50">
-          <Sword className="w-4 h-4 mr-2" />
-          Boss Battle
-        </Badge>
+    <div className="min-h-screen game-background relative">
+      {/* Grid Pattern Background */}
+      <div className="absolute inset-0 grid-pattern opacity-20"></div>
+
+      {/* Ambient Effects */}
+      <div className="absolute inset-0">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_25%_25%,_rgba(0,240,255,0.15)_0%,_transparent_50%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_75%_75%,_rgba(255,0,255,0.15)_0%,_transparent_50%)]" />
       </div>
 
-      {/* Boss Info Card */}
-      <Card className="bg-obsidian/30 border-gold/20 mb-8">
-        <CardHeader className="text-center">
-          <div className="mx-auto w-24 h-24 bg-gradient-to-br from-red-500 to-red-600 rounded-full flex items-center justify-center text-4xl mb-4">
-            💰
-          </div>
-          <CardTitle className="text-gold text-2xl">{currentQuestion.bossName}</CardTitle>
-          <CardDescription className="text-gray-300">
-            <div className="flex items-center justify-center space-x-4 mt-2">
-              <span>Difficulty: {getDifficultyStars(currentQuestion.difficulty)} ({currentQuestion.difficulty}/5)</span>
-              <span>•</span>
-              <span>Category: {currentQuestion.category}</span>
+      <div className="relative z-10 container mx-auto px-4 py-8">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center space-x-4">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => window.history.back()}
+              className="text-[#00F0FF] hover:bg-[#00F0FF]/10 border border-[#00F0FF]/30 hover:border-[#00F0FF]/50"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <div>
+              <h1 className="text-3xl font-bold font-display text-[#00F0FF] text-shadow-neon uppercase tracking-widest animate-glitch">COMBAT SIMULATION</h1>
+              <p className="text-[#E0E0E0]/80 font-body uppercase tracking-wider">Neural objection handling protocols</p>
             </div>
-          </CardDescription>
-        </CardHeader>
-      </Card>
+          </div>
+          <Badge variant="outline" className="text-[#FF00FF] border-[#FF00FF]/50 bg-[#FF00FF]/10 font-display uppercase tracking-wider animate-neon-pulse">
+            <Swords className="w-4 h-4 mr-2" />
+            Boss Encounter
+          </Badge>
+        </div>
+
+        {/* Boss Info Card */}
+        <Card className="holographic border-[#FF00FF]/50 mb-8">
+          <CardHeader className="text-center">
+            <div className="mx-auto w-32 h-32 bg-gradient-to-br from-[#FF00FF] to-[#00F0FF] rounded-lg flex items-center justify-center text-4xl mb-4 zone-glow animate-neon-pulse">
+              🤖
+            </div>
+            <CardTitle className="text-[#00F0FF] text-3xl font-display uppercase tracking-widest text-shadow-neon">{currentQuestion.bossName}</CardTitle>
+            <CardDescription className="text-[#E0E0E0]/80 font-body">
+              <div className="flex items-center justify-center space-x-6 mt-4">
+                <span className="text-[#FFD700]">THREAT LEVEL: {getDifficultyStars(currentQuestion.difficulty)} ({currentQuestion.difficulty}/5)</span>
+                <span className="text-[#00F0FF]">•</span>
+                <span className="text-[#FF00FF] uppercase tracking-wider">{currentQuestion.category}</span>
+              </div>
+            </CardDescription>
+          </CardHeader>
+        </Card>
 
       <div className="max-w-4xl mx-auto">
         {/* Scenario */}
@@ -269,6 +279,7 @@ export default function TrainingPage() {
             </div>
           </CardContent>
         </Card>
+      </div>
       </div>
     </div>
   )
