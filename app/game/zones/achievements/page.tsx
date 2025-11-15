@@ -188,6 +188,15 @@ const mockAchievements: Achievement[] = [
   }
 ]
 
+// Helper function for consistent date formatting between server and client
+const formatDate = (dateString: string) => {
+  const date = new Date(dateString)
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${month}/${day}/${year}`
+}
+
 export default function AchievementsPage() {
   const [selectedCategory, setSelectedCategory] = useState('all')
 
@@ -389,7 +398,7 @@ export default function AchievementsPage() {
                 {/* Unlock Date */}
                 {achievement.isUnlocked && achievement.unlockedAt && (
                   <div className="text-center text-xs text-green-400">
-                    ✓ Unlocked {new Date(achievement.unlockedAt).toLocaleDateString()}
+                    ✓ Unlocked {formatDate(achievement.unlockedAt)}
                   </div>
                 )}
 
