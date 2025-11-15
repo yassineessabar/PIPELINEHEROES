@@ -129,12 +129,10 @@ export default function TrainingPage() {
               🤖
             </div>
             <CardTitle className="text-[#00F0FF] text-3xl font-display uppercase tracking-widest text-shadow-neon">{currentQuestion.bossName}</CardTitle>
-            <CardDescription className="text-[#E0E0E0]/80 font-body">
-              <div className="flex items-center justify-center space-x-6 mt-4">
-                <span className="text-[#FFD700]">THREAT LEVEL: {getDifficultyStars(currentQuestion.difficulty)} ({currentQuestion.difficulty}/5)</span>
-                <span className="text-[#00F0FF]">•</span>
-                <span className="text-[#FF00FF] uppercase tracking-wider">{currentQuestion.category}</span>
-              </div>
+            <CardDescription className="text-[#E0E0E0]/80 font-body text-center mt-4">
+              <span className="text-[#FFD700]">THREAT LEVEL: {getDifficultyStars(currentQuestion.difficulty)} ({currentQuestion.difficulty}/5)</span>
+              <span className="text-[#00F0FF] mx-6">•</span>
+              <span className="text-[#FF00FF] uppercase tracking-wider">{currentQuestion.category}</span>
             </CardDescription>
           </CardHeader>
         </Card>
