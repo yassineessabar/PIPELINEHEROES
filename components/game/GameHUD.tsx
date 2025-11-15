@@ -17,10 +17,22 @@ interface Player {
 }
 
 interface GameHUDProps {
-  player: Player
+  player?: Player
 }
 
-export function GameHUD({ player }: GameHUDProps) {
+// Default mock player data
+const defaultPlayer: Player = {
+  id: "player-1",
+  name: "Agent Zero",
+  level: 12,
+  xp: 2847,
+  coins: 1250,
+  callsCompleted: 45,
+  meetings: 23,
+  streakDays: 5
+}
+
+export function GameHUD({ player = defaultPlayer }: GameHUDProps) {
   const xpProgress = getXPProgressToNextLevel(player.xp)
 
   return (
