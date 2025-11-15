@@ -25,17 +25,22 @@ export async function POST(request: NextRequest) {
       }, { status: 404 })
     }
 
-    // Get user's current coin balance
-    const playerStats = await prisma.playerStats.findUnique({
-      where: { userId }
+    // Get user and their current coin balance
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        playerStats: true
+      }
     })
 
-    if (!playerStats) {
+    if (!user || !user.playerStats) {
       return NextResponse.json({
         success: false,
-        error: 'Player stats not found'
+        error: 'User or player stats not found'
       }, { status: 404 })
     }
+
+    const playerStats = user.playerStats
 
     // Check if user has enough coins
     const currentCoins = Number(playerStats.coins)
@@ -105,7 +110,7 @@ export async function POST(request: NextRequest) {
       // Create activity log
       await tx.activity.create({
         data: {
-          workspaceId: playerStats.user?.workspaceId || 'default', // We'd need to get this properly
+          workspaceId: user.workspaceId,
           userId,
           activityType: 'shop_purchase',
           title: 'Item Purchased',
