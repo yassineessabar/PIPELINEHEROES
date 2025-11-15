@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
       }, { status: 400 })
     }
 
-    let whereClause = { isActive: true }
+    let whereClause: any = { isActive: true }
     if (category && category !== 'all') {
       whereClause = { ...whereClause, category }
     }
