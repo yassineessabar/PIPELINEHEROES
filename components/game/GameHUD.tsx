@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { XPProgress } from '@/components/ui/progress'
 import { getXPProgressToNextLevel } from '@/lib/utils'
@@ -18,9 +19,10 @@ interface Player {
 
 interface GameHUDProps {
   player?: Player
+  userId?: string
 }
 
-// Default mock player data
+// Default mock player data (fallback)
 const defaultPlayer: Player = {
   id: "player-1",
   name: "Agent Zero",
@@ -32,7 +34,48 @@ const defaultPlayer: Player = {
   streakDays: 5
 }
 
-export function GameHUD({ player = defaultPlayer }: GameHUDProps) {
+export function GameHUD({ player: propPlayer, userId = '550e8400-e29b-41d4-a716-446655440000' }: GameHUDProps) {
+  const [player, setPlayer] = useState<Player>(propPlayer || defaultPlayer)
+  const [loading, setLoading] = useState(!propPlayer)
+
+  useEffect(() => {
+    if (propPlayer) {
+      setPlayer(propPlayer)
+      return
+    }
+
+    const fetchPlayerStats = async () => {
+      try {
+        const response = await fetch(`/api/player/stats?userId=${userId}`)
+        const result = await response.json()
+
+        if (result.success) {
+          setPlayer({
+            id: result.data.id,
+            name: result.data.name,
+            level: result.data.level,
+            xp: result.data.xp,
+            coins: result.data.coins,
+            callsCompleted: result.data.callsCompleted,
+            meetings: result.data.meetings,
+            streakDays: result.data.streakDays
+          })
+        }
+      } catch (error) {
+        console.error('Failed to fetch player stats:', error)
+        // Keep using default player data on error
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchPlayerStats()
+
+    // Set up periodic refresh (every 30 seconds)
+    const interval = setInterval(fetchPlayerStats, 30000)
+    return () => clearInterval(interval)
+  }, [propPlayer, userId])
+
   const xpProgress = getXPProgressToNextLevel(player.xp)
 
   return (
@@ -52,7 +95,7 @@ export function GameHUD({ player = defaultPlayer }: GameHUDProps) {
         <div className="flex items-center gap-8">
           <div className="flex items-center gap-4">
             <div className="relative">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#00F0FF] to-[#FF00FF] flex items-center justify-center font-bold text-lg text-[#0D0C1D] border-2 border-[#00F0FF]/50 zone-glow">
+              <div className={`w-12 h-12 rounded-full bg-gradient-to-br from-[#00F0FF] to-[#FF00FF] flex items-center justify-center font-bold text-lg text-[#0D0C1D] border-2 border-[#00F0FF]/50 zone-glow ${loading ? 'animate-pulse' : ''}`}>
                 {player.name.charAt(0)}
               </div>
               <div className="level-indicator">

@@ -1,21 +1,21 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Trophy, Star, Lock, Check, Crown, Target, Flame } from 'lucide-react'
+import { ArrowLeft, Trophy, Star, Lock, Check, Crown, Target, Flame, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useToast } from '@/components/ui/use-toast'
 
 interface Achievement {
   id: string
   name: string
   icon: string
   description: string
-  category: 'calls' | 'meetings' | 'pipeline' | 'streak' | 'training' | 'milestone'
-  rarity: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary'
+  category: string
+  rarity: string
   isUnlocked: boolean
   unlockedAt?: string
   progress?: number
@@ -24,186 +24,55 @@ interface Achievement {
   coinsReward: number
 }
 
-const mockAchievements: Achievement[] = [
-  // Calls Category
-  {
-    id: '1',
-    name: 'First Call',
-    icon: '📞',
-    description: 'Make your first sales call',
-    category: 'calls',
-    rarity: 'common',
-    isUnlocked: true,
-    unlockedAt: '2024-01-10T10:00:00Z',
-    xpReward: 50,
-    coinsReward: 10
-  },
-  {
-    id: '2',
-    name: 'Call Veteran',
-    icon: '🎯',
-    description: 'Complete 50 sales calls',
-    category: 'calls',
-    rarity: 'uncommon',
-    isUnlocked: true,
-    unlockedAt: '2024-01-14T15:30:00Z',
-    xpReward: 250,
-    coinsReward: 50
-  },
-  {
-    id: '3',
-    name: 'Call Master',
-    icon: '👑',
-    description: 'Complete 100 sales calls',
-    category: 'calls',
-    rarity: 'rare',
-    isUnlocked: false,
-    progress: 24,
-    maxProgress: 100,
-    xpReward: 500,
-    coinsReward: 100
-  },
-  {
-    id: '4',
-    name: 'Perfect Score',
-    icon: '⭐',
-    description: 'Get a perfect 10/10 call score',
-    category: 'calls',
-    rarity: 'epic',
-    isUnlocked: false,
-    progress: 0,
-    maxProgress: 1,
-    xpReward: 300,
-    coinsReward: 75
-  },
-
-  // Meetings Category
-  {
-    id: '5',
-    name: 'Meeting Starter',
-    icon: '🤝',
-    description: 'Book your first meeting',
-    category: 'meetings',
-    rarity: 'common',
-    isUnlocked: true,
-    unlockedAt: '2024-01-11T09:15:00Z',
-    xpReward: 75,
-    coinsReward: 15
-  },
-  {
-    id: '6',
-    name: 'Meeting Machine',
-    icon: '⚡',
-    description: 'Book 25 meetings',
-    category: 'meetings',
-    rarity: 'rare',
-    isUnlocked: false,
-    progress: 8,
-    maxProgress: 25,
-    xpReward: 400,
-    coinsReward: 80
-  },
-
-  // Streak Category
-  {
-    id: '7',
-    name: 'Consistency King',
-    icon: '🔥',
-    description: 'Maintain a 7-day activity streak',
-    category: 'streak',
-    rarity: 'uncommon',
-    isUnlocked: false,
-    progress: 3,
-    maxProgress: 7,
-    xpReward: 300,
-    coinsReward: 75
-  },
-  {
-    id: '8',
-    name: 'Unstoppable',
-    icon: '💪',
-    description: 'Maintain a 30-day activity streak',
-    category: 'streak',
-    rarity: 'legendary',
-    isUnlocked: false,
-    progress: 3,
-    maxProgress: 30,
-    xpReward: 1000,
-    coinsReward: 250
-  },
-
-  // Training Category
-  {
-    id: '9',
-    name: 'Objection Warrior',
-    icon: '🛡️',
-    description: 'Complete 20 objection training scenarios',
-    category: 'training',
-    rarity: 'uncommon',
-    isUnlocked: false,
-    progress: 0,
-    maxProgress: 20,
-    xpReward: 250,
-    coinsReward: 60
-  },
-  {
-    id: '10',
-    name: 'Training Master',
-    icon: '🎓',
-    description: 'Achieve 90% accuracy in training',
-    category: 'training',
-    rarity: 'epic',
-    isUnlocked: false,
-    progress: 0,
-    maxProgress: 90,
-    xpReward: 600,
-    coinsReward: 150
-  },
-
-  // Milestone Category
-  {
-    id: '11',
-    name: 'Rising Star',
-    icon: '⭐',
-    description: 'Reach Level 5',
-    category: 'milestone',
-    rarity: 'common',
-    isUnlocked: true,
-    unlockedAt: '2024-01-15T12:00:00Z',
-    xpReward: 200,
-    coinsReward: 50
-  },
-  {
-    id: '12',
-    name: 'Sales Champion',
-    icon: '🏆',
-    description: 'Reach Level 25',
-    category: 'milestone',
-    rarity: 'legendary',
-    isUnlocked: false,
-    progress: 5,
-    maxProgress: 25,
-    xpReward: 2000,
-    coinsReward: 500
-  }
-]
-
-// Helper function for consistent date formatting between server and client
-const formatDate = (dateString: string) => {
-  const date = new Date(dateString)
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${month}/${day}/${year}`
+interface AchievementStats {
+  unlocked: number
+  total: number
+  totalXpEarned: number
+  totalCoinsEarned: number
+  completionRate: number
 }
 
 export default function AchievementsPage() {
   const [selectedCategory, setSelectedCategory] = useState('all')
+  const [achievements, setAchievements] = useState<Achievement[]>([])
+  const [stats, setStats] = useState<AchievementStats | null>(null)
+  const [loading, setLoading] = useState(true)
+  const { toast } = useToast()
 
-  const getAchievementsByCategory = (category: string) => {
-    if (category === 'all') return mockAchievements
-    return mockAchievements.filter(achievement => achievement.category === category)
-  }
+  // Mock user ID - in a real app, this would come from authentication
+  const currentUserId = '550e8400-e29b-41d4-a716-446655440000'
+
+  // Fetch achievements data
+  useEffect(() => {
+    const fetchAchievements = async () => {
+      try {
+        const response = await fetch(`/api/achievements?userId=${currentUserId}&category=${selectedCategory}`)
+        const result = await response.json()
+
+        if (result.success) {
+          setAchievements(result.data.achievements)
+          setStats(result.data.stats)
+        } else {
+          toast({
+            title: "Error",
+            description: "Failed to load achievements",
+            variant: "destructive"
+          })
+        }
+      } catch (error) {
+        console.error('Failed to fetch achievements:', error)
+        toast({
+          title: "Error",
+          description: "Failed to load achievements",
+          variant: "destructive"
+        })
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchAchievements()
+  }, [selectedCategory, toast])
 
   const getRarityColor = (rarity: string) => {
     switch (rarity) {
@@ -244,30 +113,37 @@ export default function AchievementsPage() {
     return (progress / maxProgress) * 100
   }
 
-  const getStats = () => {
-    const unlocked = mockAchievements.filter(a => a.isUnlocked).length
-    const total = mockAchievements.length
-    const totalXP = mockAchievements
-      .filter(a => a.isUnlocked)
-      .reduce((sum, a) => sum + a.xpReward, 0)
-    const totalCoins = mockAchievements
-      .filter(a => a.isUnlocked)
-      .reduce((sum, a) => sum + a.coinsReward, 0)
-
-    return { unlocked, total, totalXP, totalCoins }
+  // Helper function for consistent date formatting between server and client
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString)
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    return `${month}/${day}/${year}`
   }
-
-  const stats = getStats()
-  const filteredAchievements = getAchievementsByCategory(selectedCategory)
 
   const categories = [
     { id: 'all', name: 'All', icon: '🏆' },
     { id: 'calls', name: 'Calls', icon: '📞' },
     { id: 'meetings', name: 'Meetings', icon: '🤝' },
+    { id: 'pipeline', name: 'Pipeline', icon: '💰' },
     { id: 'streak', name: 'Streaks', icon: '🔥' },
     { id: 'training', name: 'Training', icon: '⚔️' },
     { id: 'milestone', name: 'Milestones', icon: '🌟' }
   ]
+
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <Loader2 className="w-8 h-8 animate-spin text-gold mx-auto mb-4" />
+            <p className="text-gray-400">Loading achievements...</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -290,42 +166,42 @@ export default function AchievementsPage() {
 
         <Badge variant="outline" className="text-gold border-gold/50">
           <Trophy className="w-4 h-4 mr-2" />
-          {stats.unlocked}/{stats.total} Unlocked
+          {stats?.unlocked || 0}/{stats?.total || 0} Unlocked
         </Badge>
       </div>
 
       {/* Stats Overview */}
-      <Card className="bg-gradient-to-r from-gold/10 to-gold/5 border-gold/30 mb-8">
-        <CardHeader>
-          <CardTitle className="text-gold flex items-center">
-            <Crown className="w-5 h-5 mr-2" />
-            Achievement Progress
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-gold mb-1">{stats.unlocked}</div>
-              <p className="text-gray-400 text-sm">Achievements Unlocked</p>
-              <Progress value={(stats.unlocked / stats.total) * 100} className="mt-2" />
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-game-blue mb-1">{stats.totalXP}</div>
-              <p className="text-gray-400 text-sm">Total XP Earned</p>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-yellow-400 mb-1">{stats.totalCoins}</div>
-              <p className="text-gray-400 text-sm">Total Coins Earned</p>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-purple-400 mb-1">
-                {Math.round((stats.unlocked / stats.total) * 100)}%
+      {stats && (
+        <Card className="bg-gradient-to-r from-gold/10 to-gold/5 border-gold/30 mb-8">
+          <CardHeader>
+            <CardTitle className="text-gold flex items-center">
+              <Crown className="w-5 h-5 mr-2" />
+              Achievement Progress
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-gold mb-1">{stats.unlocked}</div>
+                <p className="text-gray-400 text-sm">Achievements Unlocked</p>
+                <Progress value={stats.completionRate} className="mt-2" />
               </div>
-              <p className="text-gray-400 text-sm">Completion Rate</p>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-game-blue mb-1">{stats.totalXpEarned}</div>
+                <p className="text-gray-400 text-sm">Total XP Earned</p>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-yellow-400 mb-1">{stats.totalCoinsEarned}</div>
+                <p className="text-gray-400 text-sm">Total Coins Earned</p>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-purple-400 mb-1">{stats.completionRate}%</div>
+                <p className="text-gray-400 text-sm">Completion Rate</p>
+              </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Category Filters */}
       <div className="flex flex-wrap gap-3 mb-8">
@@ -344,7 +220,7 @@ export default function AchievementsPage() {
 
       {/* Achievements Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredAchievements.map((achievement, index) => (
+        {achievements.map((achievement, index) => (
           <motion.div
             key={achievement.id}
             initial={{ opacity: 0, y: 20 }}
@@ -427,7 +303,7 @@ export default function AchievementsPage() {
       </div>
 
       {/* Empty State */}
-      {filteredAchievements.length === 0 && (
+      {achievements.length === 0 && (
         <div className="text-center py-12">
           <div className="text-6xl mb-4">🏆</div>
           <h3 className="text-xl font-bold text-gold mb-2">No achievements found</h3>

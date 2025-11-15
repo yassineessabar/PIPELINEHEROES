@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import {
   Database,
@@ -30,10 +30,50 @@ interface Zone {
   isUnlocked: boolean
   hasNotification?: boolean
   cyberpunkTitle: string
+  requiredLevel?: number
 }
 
-export function GameMap() {
+interface PlayerData {
+  name: string
+  level: number
+  hasNewAchievements?: boolean
+  hasNewQuests?: boolean
+}
+
+interface GameMapProps {
+  userId?: string
+}
+
+export function GameMap({ userId = '550e8400-e29b-41d4-a716-446655440000' }: GameMapProps = {}) {
   const [selectedZone, setSelectedZone] = useState<string | null>(null)
+  const [playerData, setPlayerData] = useState<PlayerData>({ name: 'Agent Zero', level: 12 })
+  const [loading, setLoading] = useState(true)
+
+  // Fetch player data
+  useEffect(() => {
+    const fetchPlayerData = async () => {
+      try {
+        const response = await fetch(`/api/player/stats?userId=${userId}`)
+        const result = await response.json()
+
+        if (result.success) {
+          setPlayerData({
+            name: result.data.name,
+            level: result.data.level,
+            // You could add logic here to check for new achievements/quests
+            hasNewAchievements: result.data.level > 10, // Example logic
+            hasNewQuests: result.data.questsCompleted < 3 // Example logic
+          })
+        }
+      } catch (error) {
+        console.error('Failed to fetch player data:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchPlayerData()
+  }, [userId])
 
   const zones: Zone[] = [
     {
@@ -45,7 +85,8 @@ export function GameMap() {
       color: 'from-[#00F0FF] to-[#0099CC]',
       position: { x: 50, y: 50 },
       isUnlocked: true,
-      hasNotification: true
+      hasNotification: true,
+      requiredLevel: 1
     },
     {
       id: 'training',
@@ -55,7 +96,8 @@ export function GameMap() {
       icon: <Swords className="w-8 h-8" />,
       color: 'from-[#FF00FF] to-[#CC0099]',
       position: { x: 20, y: 30 },
-      isUnlocked: true
+      isUnlocked: playerData.level >= 1,
+      requiredLevel: 1
     },
     {
       id: 'shop',
@@ -65,7 +107,8 @@ export function GameMap() {
       icon: <ShoppingCart className="w-8 h-8" />,
       color: 'from-[#FFD700] to-[#CC9900]',
       position: { x: 20, y: 70 },
-      isUnlocked: true
+      isUnlocked: playerData.level >= 3,
+      requiredLevel: 3
     },
     {
       id: 'quests',
@@ -75,8 +118,9 @@ export function GameMap() {
       icon: <Target className="w-8 h-8" />,
       color: 'from-[#00FF88] to-[#00CC66]',
       position: { x: 50, y: 15 },
-      isUnlocked: true,
-      hasNotification: true
+      isUnlocked: playerData.level >= 2,
+      hasNotification: playerData.hasNewQuests,
+      requiredLevel: 2
     },
     {
       id: 'arena',
@@ -86,7 +130,8 @@ export function GameMap() {
       icon: <Crown className="w-8 h-8" />,
       color: 'from-[#8B5CF6] to-[#7C3AED]',
       position: { x: 80, y: 30 },
-      isUnlocked: true
+      isUnlocked: playerData.level >= 5,
+      requiredLevel: 5
     },
     {
       id: 'achievements',
@@ -96,7 +141,9 @@ export function GameMap() {
       icon: <Award className="w-8 h-8" />,
       color: 'from-[#F59E0B] to-[#D97706]',
       position: { x: 80, y: 70 },
-      isUnlocked: true
+      isUnlocked: playerData.level >= 4,
+      hasNotification: playerData.hasNewAchievements,
+      requiredLevel: 4
     }
   ]
 
@@ -315,7 +362,7 @@ export function GameMap() {
                   <div className="text-center">
                     <div className="text-lg text-red-400 mb-1">🔒</div>
                     <span className="text-xs text-gray-400 font-bold font-display">
-                      LEVEL 5
+                      LEVEL {zone.requiredLevel || 5}
                     </span>
                   </div>
                 </div>
@@ -369,8 +416,8 @@ export function GameMap() {
 
             {/* Level Indicator */}
             <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2">
-              <div className="bg-gradient-to-r from-[#FFD700] to-[#FF8C00] px-3 py-1 rounded-full border border-[#FFD700]/50 shadow-lg">
-                <span className="text-xs font-bold text-[#0D0C1D] font-display">LVL 12</span>
+              <div className={`bg-gradient-to-r from-[#FFD700] to-[#FF8C00] px-3 py-1 rounded-full border border-[#FFD700]/50 shadow-lg ${loading ? 'animate-pulse' : ''}`}>
+                <span className="text-xs font-bold text-[#0D0C1D] font-display">LVL {playerData.level}</span>
               </div>
             </div>
 
@@ -390,7 +437,7 @@ export function GameMap() {
             {/* Name Plate */}
             <div className="absolute top-20 left-1/2 transform -translate-x-1/2 text-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
               <div className="bg-obsidian/90 border border-[#00F0FF]/50 rounded-lg px-3 py-1 backdrop-blur-sm">
-                <span className="text-sm font-bold text-[#00F0FF] font-display">AGENT_ZERO</span>
+                <span className="text-sm font-bold text-[#00F0FF] font-display">{playerData.name.replace(' ', '_').toUpperCase()}</span>
                 <div className="text-xs text-gray-300">Pipeline Hero</div>
               </div>
             </div>

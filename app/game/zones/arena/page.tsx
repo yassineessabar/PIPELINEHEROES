@@ -1,49 +1,91 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Crown, Trophy, Medal, TrendingUp, Users, Target } from 'lucide-react'
+import { ArrowLeft, Crown, Trophy, Medal, TrendingUp, Users, Target, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useToast } from '@/components/ui/use-toast'
 
 interface LeaderboardEntry {
   id: string
   name: string
+  displayName?: string
   level: number
   xp: number
   meetings: number
   calls: number
   rank: number
+  streak: number
   isCurrentPlayer?: boolean
-  avatar?: string
-  streak?: number
 }
 
-const mockLeaderboard: LeaderboardEntry[] = [
-  { id: '1', name: 'Sophie Martin', level: 12, xp: 24500, meetings: 32, calls: 85, rank: 1, streak: 14 },
-  { id: '2', name: 'Lucas Bernard', level: 11, xp: 22100, meetings: 28, calls: 78, rank: 2, streak: 8 },
-  { id: '3', name: 'Emma Dubois', level: 10, xp: 19800, meetings: 25, calls: 71, rank: 3, streak: 12 },
-  { id: '4', name: 'Marc Fontaine', level: 9, xp: 17200, meetings: 22, calls: 64, rank: 4, streak: 6 },
-  { id: '5', name: 'Julie Mercier', level: 9, xp: 16500, meetings: 21, calls: 59, rank: 5, streak: 3 },
-  { id: '6', name: 'Pierre Leclerc', level: 8, xp: 14800, meetings: 18, calls: 52, rank: 6, streak: 7 },
-  { id: '7', name: 'Claire Dupont', level: 8, xp: 14200, meetings: 17, calls: 48, rank: 7, streak: 2 },
-  { id: '8', name: 'Thomas Girard', level: 7, xp: 12500, meetings: 15, calls: 43, rank: 8, streak: 5 },
-  { id: '9', name: 'Amélie Rousseau', level: 7, xp: 12100, meetings: 14, calls: 39, rank: 9, streak: 1 },
-  { id: '10', name: 'YOU', level: 5, xp: 3250, meetings: 8, calls: 24, rank: 10, isCurrentPlayer: true, streak: 3 },
-]
+interface ProgressData {
+  current: number
+  max: number
+  scoreNeeded: number
+  nextPlayer: {
+    name: string
+    rank: number
+  }
+}
 
-const topPerformers = {
-  calls: mockLeaderboard.sort((a, b) => b.calls - a.calls).slice(0, 3),
-  meetings: mockLeaderboard.sort((a, b) => b.meetings - a.meetings).slice(0, 3),
-  streak: mockLeaderboard.sort((a, b) => (b.streak || 0) - (a.streak || 0)).slice(0, 3)
+interface TopPerformers {
+  calls: LeaderboardEntry[]
+  meetings: LeaderboardEntry[]
+  streak: LeaderboardEntry[]
+}
+
+interface LeaderboardData {
+  leaderboard: LeaderboardEntry[]
+  currentPlayer: LeaderboardEntry
+  progressData: ProgressData | null
+  topPerformers: TopPerformers
+  period: string
 }
 
 export default function ArenaPage() {
   const [selectedPeriod, setSelectedPeriod] = useState('weekly')
-  const currentPlayer = mockLeaderboard.find(p => p.isCurrentPlayer)!
+  const [leaderboardData, setLeaderboardData] = useState<LeaderboardData | null>(null)
+  const [loading, setLoading] = useState(true)
+  const { toast } = useToast()
+
+  // Mock user ID - in a real app, this would come from authentication
+  const currentUserId = '550e8400-e29b-41d4-a716-446655440000'
+
+  // Fetch leaderboard data
+  useEffect(() => {
+    const fetchLeaderboard = async () => {
+      try {
+        const response = await fetch(`/api/leaderboard?userId=${currentUserId}&period=${selectedPeriod}`)
+        const result = await response.json()
+
+        if (result.success) {
+          setLeaderboardData(result.data)
+        } else {
+          toast({
+            title: "Error",
+            description: "Failed to load leaderboard",
+            variant: "destructive"
+          })
+        }
+      } catch (error) {
+        console.error('Failed to fetch leaderboard:', error)
+        toast({
+          title: "Error",
+          description: "Failed to load leaderboard",
+          variant: "destructive"
+        })
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchLeaderboard()
+  }, [selectedPeriod, toast])
 
   const getRankIcon = (rank: number) => {
     switch (rank) {
@@ -63,22 +105,32 @@ export default function ArenaPage() {
     }
   }
 
-  const getProgressToNextRank = () => {
-    const currentRank = currentPlayer.rank
-    if (currentRank === 1) return { current: 100, max: 100, nextPlayer: null }
-
-    const nextPlayer = mockLeaderboard.find(p => p.rank === currentRank - 1)!
-    const xpDifference = nextPlayer.xp - currentPlayer.xp
-
-    return {
-      current: currentPlayer.xp,
-      max: nextPlayer.xp,
-      xpNeeded: xpDifference,
-      nextPlayer
-    }
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <Loader2 className="w-8 h-8 animate-spin text-gold mx-auto mb-4" />
+            <p className="text-gray-400">Loading arena...</p>
+          </div>
+        </div>
+      </div>
+    )
   }
 
-  const progressData = getProgressToNextRank()
+  if (!leaderboardData) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="text-center py-12">
+          <div className="text-6xl mb-4">🏆</div>
+          <h3 className="text-xl font-bold text-gold mb-2">Arena temporarily unavailable</h3>
+          <p className="text-gray-400">Please try again later</p>
+        </div>
+      </div>
+    )
+  }
+
+  const { leaderboard, currentPlayer, progressData, topPerformers } = leaderboardData
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -111,10 +163,10 @@ export default function ArenaPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <div className="w-16 h-16 bg-gradient-to-br from-gold to-yellow-600 rounded-full flex items-center justify-center text-obsidian font-bold text-xl">
-                {currentPlayer.name.charAt(0)}
+                {(currentPlayer.displayName || currentPlayer.name).charAt(0)}
               </div>
               <div>
-                <CardTitle className="text-gold text-xl">{currentPlayer.name}</CardTitle>
+                <CardTitle className="text-gold text-xl">{currentPlayer.displayName || currentPlayer.name}</CardTitle>
                 <CardDescription className="text-gray-300">
                   Level {currentPlayer.level} • {currentPlayer.xp.toLocaleString()} XP
                 </CardDescription>
@@ -129,12 +181,12 @@ export default function ArenaPage() {
           </div>
         </CardHeader>
         <CardContent>
-          {progressData.nextPlayer && (
+          {progressData && (
             <div className="space-y-3">
               <div className="flex justify-between text-sm">
                 <span className="text-gray-400">Progress to #{progressData.nextPlayer.rank}</span>
                 <span className="text-gold">
-                  {progressData.xpNeeded} XP needed to surpass {progressData.nextPlayer.name}
+                  {progressData.scoreNeeded} points needed to surpass {progressData.nextPlayer.name}
                 </span>
               </div>
               <Progress
@@ -166,12 +218,12 @@ export default function ArenaPage() {
             <CardHeader>
               <CardTitle className="text-gold flex items-center">
                 <Trophy className="w-5 h-5 mr-2" />
-                Team Leaderboard
+                Team Leaderboard - {selectedPeriod.charAt(0).toUpperCase() + selectedPeriod.slice(1)}
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
               <div className="space-y-2">
-                {mockLeaderboard.map((player, index) => (
+                {leaderboard.map((player, index) => (
                   <motion.div
                     key={player.id}
                     initial={{ opacity: 0, x: -20 }}
@@ -186,14 +238,14 @@ export default function ArenaPage() {
                         {getRankIcon(player.rank)}
                       </div>
                       <div className="w-12 h-12 bg-gradient-to-br from-game-blue to-blue-600 rounded-full flex items-center justify-center text-white font-bold">
-                        {player.name.charAt(0)}
+                        {(player.displayName || player.name).charAt(0)}
                       </div>
                       <div>
                         <h4 className={`font-semibold ${player.isCurrentPlayer ? 'text-gold' : 'text-white'}`}>
-                          {player.name}
+                          {player.displayName || player.name}
                         </h4>
                         <p className="text-gray-400 text-sm">
-                          Level {player.level} • {player.streak ? `🔥 ${player.streak} day streak` : ''}
+                          Level {player.level} • {player.streak > 0 ? `🔥 ${player.streak} day streak` : 'No streak'}
                         </p>
                       </div>
                     </div>
@@ -228,11 +280,11 @@ export default function ArenaPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                {topPerformers.calls.map((player, index) => (
+                {topPerformers.calls.slice(0, 3).map((player, index) => (
                   <div key={player.id} className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
                       <span className="text-gold font-bold">#{index + 1}</span>
-                      <span className="text-white text-sm">{player.name}</span>
+                      <span className="text-white text-sm">{player.displayName || player.name}</span>
                     </div>
                     <span className="text-game-blue font-semibold">{player.calls}</span>
                   </div>
@@ -248,11 +300,11 @@ export default function ArenaPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                {topPerformers.meetings.map((player, index) => (
+                {topPerformers.meetings.slice(0, 3).map((player, index) => (
                   <div key={player.id} className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
                       <span className="text-gold font-bold">#{index + 1}</span>
-                      <span className="text-white text-sm">{player.name}</span>
+                      <span className="text-white text-sm">{player.displayName || player.name}</span>
                     </div>
                     <span className="text-green-400 font-semibold">{player.meetings}</span>
                   </div>
@@ -268,11 +320,11 @@ export default function ArenaPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                {topPerformers.streak.map((player, index) => (
+                {topPerformers.streak.slice(0, 3).map((player, index) => (
                   <div key={player.id} className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
                       <span className="text-gold font-bold">#{index + 1}</span>
-                      <span className="text-white text-sm">{player.name}</span>
+                      <span className="text-white text-sm">{player.displayName || player.name}</span>
                     </div>
                     <span className="text-orange-400 font-semibold">{player.streak} days</span>
                   </div>
@@ -295,18 +347,18 @@ export default function ArenaPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
             <div>
               <div className="text-3xl mb-2">📈</div>
-              <h4 className="font-semibold text-white mb-1">XP Points</h4>
-              <p className="text-gray-400 text-sm">Your primary score based on all activities</p>
+              <h4 className="font-semibold text-white mb-1">Activity Score</h4>
+              <p className="text-gray-400 text-sm">Based on XP gained, meetings booked, and calls made</p>
             </div>
             <div>
               <div className="text-3xl mb-2">🤝</div>
               <h4 className="font-semibold text-white mb-1">Meeting Bonus</h4>
-              <p className="text-gray-400 text-sm">Extra points for each meeting booked</p>
+              <p className="text-gray-400 text-sm">100 points per meeting - the highest impact activity</p>
             </div>
             <div>
-              <div className="text-3xl mb-2">🔥</div>
-              <h4 className="font-semibold text-white mb-1">Streak Multiplier</h4>
-              <p className="text-gray-400 text-sm">Consistency rewards with streak bonuses</p>
+              <div className="text-3xl mb-2">📞</div>
+              <h4 className="font-semibold text-white mb-1">Call Points</h4>
+              <p className="text-gray-400 text-sm">50 points per call - consistency matters</p>
             </div>
           </div>
         </CardContent>
