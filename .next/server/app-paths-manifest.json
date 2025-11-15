@@ -1,5 +1,4 @@
 {
-  "/not-found": "app/not-found.js",
   "/game/zones/arena/page": "app/game/zones/arena/page.js",
   "/game/page": "app/game/page.js"
 }
